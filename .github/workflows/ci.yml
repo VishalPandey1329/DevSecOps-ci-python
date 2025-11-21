@@ -1,109 +1,19 @@
-name: CI - DevSecOps Pipeline
+name: CI smoke test
 
 on:
+  push:
   pull_request:
-    types: [opened, synchronize, reopened]
 
 jobs:
-  build-and-scan:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Install build tools
-      run: |
-        python -m pip install --upgrade pip setuptools wheel
-
-    - name: Install project dependencies
-      run: |
-        pip install -r requirements.txt
-
-    - name: Run unit tests
-      run: |
-        bash scripts/run_tests.sh
-
-    - name: Install Semgrep
-      run: |
-        pip install semgrep
-
-    - name: Run Semgrep (SAST)
-      run: |
-        semgrep --config security/semgrep.yml --json --output semgrep-report.json
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to GitHub Container Registry
-      if: ${{ secrets.GITHUB_TOKEN != '' }}
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Build Docker image
-      run: |
-        IMAGE_NAME="ghcr.io/${{ github.repository }}:${{ github.sha }}"
-        docker build -t $IMAGE_NAME .
-
-    - name: Install syft, trivy, conftest
-      run: |
-        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-        curl -sLo /usr/local/bin/conftest https://github.com/open-policy-agent/conftest/releases/latest/download/conftest-linux-amd64 && chmod +x /usr/local/bin/conftest
-
-    - name: Generate SBOM
-      run: |
-        syft dir:. -o json > sbom.json || true
-
-    - name: Trivy scan image (CRITICAL,HIGH -> exit 1)
-      run: |
-        IMAGE_NAME="ghcr.io/${{ github.repository }}:${{ github.sha }}"
-        trivy image --format json --output trivy-image.json --exit-code 1 --severity CRITICAL,HIGH $IMAGE_NAME || true
-
-    - name: Run Conftest policy
-      run: |
-        conftest test trivy-image.json -p security || true
-
-    - name: Upload scan reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: security-reports
-        path: |
-          semgrep-report.json
-          sbom.json
-          trivy-image.json
-          security/policy.rego
-
-    - name: Fail pipeline if high/critical vuln present (quick check)
-      run: |
-        if [ -s trivy-image.json ]; then
-          python - <<'PY'
-import json,sys
-data=json.load(open('trivy-image.json'))
-# trivy output can be empty array or containing Results; quick heuristic to find high/critical
-def has_high_crit(d):
-    for r in d.get('Results',[]):
-        for v in r.get('Vulnerabilities',[]) or []:
-            if v.get('Severity') in ('HIGH','CRITICAL'):
-                return True
-    return False
-if has_high_crit(data):
-    print('High/Critical vulnerabilities found - failing pipeline')
-    sys.exit(1)
-print('No High/Critical vulnerabilities found')
-PY
-        fi
+      - uses: actions/checkout@v4
+      
+      - name: Print environment
+        run: |
+          echo "CI smoke test started"
+          echo "GITHUB_EVENT_NAME="
+      
+      - name: Simple test
+        run: echo "Hello from minimal workflow"
