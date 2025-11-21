@@ -1,0 +1,7 @@
+rules:
+  - id: python-builtin-eval
+    message: Avoid use of `eval()` — it's unsafe.
+    languages: [python]
+    patterns:
+      - pattern: eval(...)
+    severity: WARNING
