@@ -10,13 +10,8 @@ jobs:
   build-test-security:
     runs-on: ubuntu-latest
 
-    # Permissions can be adjusted later if you add more security tools
     permissions:
       contents: read
-
-    env:
-      # ✅ correct GitHub Actions syntax (no pipe |)
-      IMAGE_NAME: ${{ toLower(github.repository) }}
 
     steps:
       - name: Checkout repository
@@ -35,7 +30,8 @@ jobs:
       - name: Run basic tests (placeholder)
         run: |
           echo "Running tests..."
-          # replace this with: pytest tests/  (when you add tests)
+          # TODO: add real tests, e.g.:
+          # pytest
 
       - name: Run Bandit security scan
         run: |
@@ -43,6 +39,10 @@ jobs:
           bandit -r app -ll || true
 
       - name: Build Docker image
+        env:
+          IMAGE_NAME: ${{ github.repository }}
         run: |
-          echo "Building Docker image..."
-          docker build -t "${IMAGE_NAME}:latest" .
+          # convert repo name to lowercase in bash
+          IMAGE_NAME_LC=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')
+          echo "Building Docker image ${IMAGE_NAME_LC}:latest"
+          docker build -t "${IMAGE_NAME_LC}:latest" .
