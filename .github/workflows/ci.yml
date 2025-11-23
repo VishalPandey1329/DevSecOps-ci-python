@@ -15,7 +15,7 @@ jobs:
       id-token: write
 
     env:
-      IMAGE_NAME: ghcr.io/${{ toLower(github.repository) }}:${{ github.sha }
+      IMAGE_NAME: ghcr.io/${{ github.repository | toLower }}:${{ github.sha }}
 
 
     steps:
