@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI / DevSecOps Pipeline
 
 on:
   push:
@@ -12,6 +12,11 @@ jobs:
 
     permissions:
       contents: read
+      packages: read
+
+    env:
+      # e.g. VishalPandey1329/DevSecOps-ci-python
+      IMAGE_NAME: ${{ github.repository }}
 
     steps:
       - name: Checkout repository
@@ -26,23 +31,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest bandit
 
-      - name: Run basic tests (placeholder)
+      - name: Run tests with pytest
         run: |
-          echo "Running tests..."
-          # TODO: add real tests, e.g.:
-          # pytest
+          echo "Running pytest..."
+          pytest
 
-      - name: Run Bandit security scan
+      - name: Run Bandit security scan (Python code)
         run: |
-          pip install bandit
+          echo "Running Bandit security scan..."
           bandit -r app -ll || true
 
       - name: Build Docker image
-        env:
-          IMAGE_NAME: ${{ github.repository }}
         run: |
-          # convert repo name to lowercase in bash
           IMAGE_NAME_LC=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME_LC=$IMAGE_NAME_LC" >> $GITHUB_ENV
           echo "Building Docker image ${IMAGE_NAME_LC}:latest"
           docker build -t "${IMAGE_NAME_LC}:latest" .
