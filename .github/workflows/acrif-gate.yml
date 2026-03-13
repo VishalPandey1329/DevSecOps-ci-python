@@ -1,0 +1,17 @@
+name: ACRIF Smart Security Gate
+on: [push]
+
+jobs:
+  analyze-risk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Bandit Scan
+        run: pip install bandit && bandit -r . -f json -o output.json || true
+        
+      - name: ACRIF Adaptive Gating
+        uses: Ayush88940/Adaptive-Risk-Intelligence-Framework/.github/actions/risk-gate@main
+        with:
+          risk_engine_url: 'https://acrif-backend.onrender.com'
+          scan_results_path: 'output.json'
